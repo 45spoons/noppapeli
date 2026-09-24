@@ -7,7 +7,6 @@ enum DiceState {
     Point,
     Reroll,
     Fail,
-    Unrolled,
 }
 
 impl fmt::Display for DiceState {
@@ -16,7 +15,6 @@ impl fmt::Display for DiceState {
             Self::Point => write!(f, "🧠"),
             Self::Reroll => write!(f, "👣"),
             Self::Fail => write!(f, "💥"),
-            Self::Unrolled => write!(f, ".."),
         }
     }
 }
@@ -50,7 +48,7 @@ impl Dice {
     fn new(color: DiceColor) -> Self {
         Self {
             color,
-            state: DiceState::Unrolled,
+            state: DiceState::Reroll,
         }
     }
 }
@@ -161,7 +159,6 @@ impl<'a> Turn<'a> {
                             DiceState::Reroll => {
                                 rerolls.push(dice);
                             },
-                            DiceState::Unrolled => panic!("A freshly rolled dice cannot be unrolled..."),
                         }
                     }
 
