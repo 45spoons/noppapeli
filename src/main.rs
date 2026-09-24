@@ -124,23 +124,19 @@ impl<'a> Turn<'a> {
 
         self._readiness_check();
         clearscreen::clear().expect("failed to clear screen");
-        println!("NEW TURN: {}, GO! (enter \"roll\" to roll and ENTER to redeem your points)", self.player.name);
+        println!("NEW TURN: {}, GO! (enter \"r\" to roll and \"s\" to redeem your points)", self.player.name);
 
-        let mut hand = vec![
-            self.dicecup.pop().expect("Dicecup shouldn't be run out"),
-            self.dicecup.pop().expect("Dicecup shouldn't be run out"),
-            self.dicecup.pop().expect("Dicecup shouldn't be run out")
-        ];
+        let mut hand: Vec<Dice> = Vec::new();
         let mut table: Vec<Dice> = Vec::new();
         let mut rerolls: Vec<Dice> = Vec::new();
 
         loop {
-
-            match Self::_get_action() {
+            let action = Self::_get_action();
+            match action {
                 Action::Roll => {
                     self.dicecup.shuffle(&mut rand::rng());
 
-                    while hand.len() < 2 {
+                    while hand.len() < 3 {
                         hand.push(self.dicecup.pop().expect("Dicecup shouldn't be run out"));
                     }
 
@@ -164,6 +160,7 @@ impl<'a> Turn<'a> {
 
                     if fails >= 3 {
                         println!("Aww shucks! {}'s turn ended with a grand explosion, taking a shotgun to the face {} times", self.player.name, fails);
+                        println!("By the way, {} has {} points and missed out on {} points", self.player.name, self.player.points, gathered_points);
                         return
                     }
 
@@ -172,10 +169,18 @@ impl<'a> Turn<'a> {
                         hand.push(dice);
                     }
 
-                    if hand.len() < 2 {
-                        println!("Woah what a turn! We need to refill the dice cup from the table!");
-                        while let Some(dice) = table.pop() {
-                            self.dicecup.push(dice);
+                    // Refill rest of hand from dicecup
+                    while hand.len() < 3 {
+                        if let Some(dice) = self.dicecup.pop() {
+                            hand.push(dice);
+                        }
+
+                        // Refill dicecup from table if necessary
+                        else {
+                            println!("Woah what a turn! We need to refill the dice cup from the table!");
+                                while let Some(dice) = table.pop() {
+                                self.dicecup.push(dice);
+                            }
                         }
                     }
                 },
@@ -189,14 +194,23 @@ impl<'a> Turn<'a> {
     }
 
     fn _get_action() -> Action {
-        let mut action = String::new();
-        io::stdin()
-            .read_line(&mut action)
-            .expect("Failed to read line");
+        loop {
+            let mut action = String::new();
+            io::stdin()
+                .read_line(&mut action)
+                .expect("Failed to read line");
 
-        match action.as_str() {
-            "roll\n" => Action::Roll,
-            _ => Action::Stay,
+            let action = match action.trim() {
+                "r" => Some(Action::Roll),
+                "s" => Some(Action::Stay),
+                _ => None,
+            };
+
+            if let Some(action) = action {
+                return action
+            }
+            println!("Type \"r\" to ROLL and \"s\" to STAY");
+            println!("Staying will end your turn and save your points, roll if you wish to push your luck");
         }
     }
 }
