@@ -244,6 +244,11 @@ fn main() {
 
     let mut players = gather_players();
 
+    while players.is_empty() {
+        println!("Hey, you didn't add any players..?");
+        players = gather_players();
+    }
+
     println!("Alright, lets begin playing already!! FIRST TO 20 POINTS WINS");
 
     'game:loop {
@@ -251,7 +256,7 @@ fn main() {
             let mut turn = Turn::new(player);
             turn.play_turn();
             if player.points >= 20 {
-                println!("{} WINS! CONCRAPULATIONS!!", player.name);
+                println!("{} WINS! CONCRAPULATIONS!! 💩 :DD", player.name);
                 break 'game;
             }
         }
