@@ -124,7 +124,7 @@ impl<'a> Turn<'a> {
 
         self._readiness_check();
         clearscreen::clear().expect("failed to clear screen");
-        println!("NEW TURN: {}, GO! (enter \"r\" to roll and \"s\" to redeem your points)", self.player.name);
+        println!("NEW TURN: {} [ {} points ] GO! (enter \"r\" to roll and \"s\" to redeem your points)", self.player.name, self.player.points);
 
         let mut hand: Vec<Dice> = Vec::new();
         let mut table: Vec<Dice> = Vec::new();
