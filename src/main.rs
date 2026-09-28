@@ -2,6 +2,34 @@ use core::fmt;
 use std::io;
 use rand::prelude::*;
 
+use color_eyre::Result;
+use ratatui::{
+    crossterm::event,
+    layout::{Constraint, Layout, Spacing},
+    symbols::merge::MergeStrategy,
+    style::{Style},
+    widgets::*,
+    text::{Line},
+    DefaultTerminal, Frame,
+};
+use tachyonfx::{fx, EffectManager, pattern};
+
+/// Application.
+pub mod app;
+
+/// Terminal events handler.
+pub mod event;
+
+/// Widget renderer.
+pub mod ui;
+
+/// Terminal user interface.
+pub mod tui;
+
+/// Application updater.
+pub mod update;
+
+
 #[derive(Clone, Debug)]
 enum DiceState {
     Point,
@@ -123,7 +151,6 @@ impl<'a> Turn<'a> {
         let mut fails = 0;
 
         self._readiness_check();
-        clearscreen::clear().expect("failed to clear screen");
         println!("NEW TURN: {} [ {} points ] GO! (enter \"r\" to roll and \"s\" to redeem your points)", self.player.name, self.player.points);
 
         let mut hand: Vec<Dice> = Vec::new();
@@ -227,9 +254,8 @@ fn gather_players() -> Vec<Player> {
         name = name.trim().to_string();
 
         if name.is_empty() {
-            clearscreen::clear().expect("failed to clear screen");
             println!("Done adding players I see");
-            return players
+            break players
         }
 
         let new_player = Player::new(name);
@@ -238,27 +264,81 @@ fn gather_players() -> Vec<Player> {
     }
 }
 
-fn main() {
-    println!("Welcome to the dice game! You'll learn soon how to play");
-    println!("First off, list all players playing. Enter an empty line when done.");
+fn run(mut terminal: DefaultTerminal) -> Result<()> {
+    let mut effects: EffectManager<()> = EffectManager::default();
 
-    let mut players = gather_players();
-
-    while players.is_empty() {
-        println!("Hey, you didn't add any players..?");
-        players = gather_players();
-    }
-
-    println!("Alright, lets begin playing already!! FIRST TO 20 POINTS WINS");
-
-    'game:loop {
-        for player in &mut players {
-            let mut turn = Turn::new(player);
-            turn.play_turn();
-            if player.points >= 20 {
-                println!("{} WINS! CONCRAPULATIONS!! 💩 :DD", player.name);
-                break 'game;
-            }
+    loop {
+        terminal.draw(|frame| render(frame))?;
+        if event::read()?.is_key_press() {
+            break Ok(());
         }
     }
+}
+
+fn render(frame: &mut Frame) {
+    let [title_bar_area, main_area] = Layout::vertical([Constraint::Length(1), Constraint::Percentage(100)])
+        .areas(frame.area());
+
+    let [gamba_area, side_bar_area] = Layout::horizontal([Constraint::Percentage(75), Constraint::Fill(1)])
+        .spacing(Spacing::Overlap(1))
+        .areas(main_area);
+
+    let title_bar_widget = Block::default()
+        .title(Line::from(" NOPPAPELI ").centered())
+        .borders(Borders::TOP)
+        .border_style(Style::default()
+        .fg(ratatui::style::Color::LightGreen));
+
+    let gamba_widget = Block::default()
+        .title(" GAMBA!! ")
+        .merge_borders(MergeStrategy::Fuzzy)
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded);
+
+    let side_bar_widget = Block::default()
+        .title(" Side items ")
+        .merge_borders(MergeStrategy::Fuzzy)
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded);
+
+    let fg_shift = [1440.0, 0.0, 0.0];
+    let timer = 2000;
+
+    let hsl_title_xform = fx::hsl_shift_fg(fg_shift, timer)
+        .with_pattern(pattern::SweepPattern::left_to_right(160))
+        .with_area(title_bar_area);
+
+    let title_effect = fx::repeating(fx::remap_alpha(0.3333, 0.6667, hsl_title_xform));
+
+    frame.render_widget(title_bar_widget, title_bar_area);
+    frame.render_widget(gamba_widget, gamba_area);
+    frame.render_widget(side_bar_widget, side_bar_area);
+}
+
+fn main() -> Result<> {
+    color_eyre::install()?;
+    let terminal = ratatui::init();
+    let mut effects: EffectManager<()> = EffectManager::default();
+    let _ = run(terminal);
+
+    // let mut players = gather_players();
+
+    // while players.is_empty() {
+    //     println!("Hey, you didn't add any players..?");
+    //     players = gather_players();
+    // }
+
+    // 'game:loop {
+    //     for player in &mut players {
+    //         let mut turn = Turn::new(player);
+    //         turn.play_turn();
+    //         if player.points >= 20 {
+    //             println!("{} WINS! CONCRAPULATIONS!! 💩 :DD", player.name);
+    //             break 'game;
+    //         }
+    //     }
+    // };
+
+    ratatui::restore();
+    Ok(())
 }
