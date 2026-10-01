@@ -120,7 +120,6 @@ impl<'a> Turn<'a> {
 
     fn play_turn(&mut self) {
         let mut gathered_points = 0;
-        let mut fails = 0;
 
         self._readiness_check();
         clearscreen::clear().expect("failed to clear screen");
@@ -129,6 +128,7 @@ impl<'a> Turn<'a> {
         let mut hand: Vec<Dice> = Vec::new();
         let mut table: Vec<Dice> = Vec::new();
         let mut rerolls: Vec<Dice> = Vec::new();
+        let mut fails: Vec<Dice> = Vec::new();
 
         loop {
             let action = Self::_get_action();
@@ -145,8 +145,7 @@ impl<'a> Turn<'a> {
                         println!("{dice}");
                         match dice.state {
                             DiceState::Fail => {
-                                fails += 1;
-                                table.push(dice);
+                                fails.push(dice);
                             },
                             DiceState::Point => {
                                 gathered_points += 1;
@@ -158,8 +157,8 @@ impl<'a> Turn<'a> {
                         }
                     }
 
-                    if fails >= 3 {
-                        println!("Aww shucks! {}'s turn ended with a grand explosion, taking a shotgun to the face {} times", self.player.name, fails);
+                    if fails.len() >= 3 {
+                        println!("Aww shucks! {}'s turn ended with a grand explosion, taking a shotgun to the face {} times", self.player.name, fails.len());
                         println!("By the way, {} has {} points and missed out on {} points", self.player.name, self.player.points, gathered_points);
                         return
                     }
